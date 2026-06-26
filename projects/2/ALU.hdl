@@ -41,15 +41,26 @@ CHIP ALU {
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
+    // Main part of calculation
     Mux16(a=x, b=false, sel=zx, out=outZX);
     Mux16(a=y, b=false, sel=zy, out=outZY);
     Not16(in=outZX, out=notX);
     Not16(in=outZY, out=notY);
     Mux16(a=outZX, b=notX, sel=nx, out=outNX);
-    Mux16(a=outZX, b=notX, sel=ny, out=outNY);
+    Mux16(a=outZY, b=notY, sel=ny, out=outNY);
     Add16(a=outNX, b=outNY, out=addF);
     And16(a=outNX, b=outNY, out=andF);
-    Mux16(a=addF, b=andF, sel=f, out=outF);
+    Mux16(a=andF, b=addF, sel=f, out=outF);
     Not16(in=outF, out=outNF);
-    Mux16(a=outF, b=outNF, sel=no, out=out);
+    Mux16(a=outF, b=outNF, sel=no, out=out, 
+                                   out[15]=signBit,
+                                   out[0..7]=lowHalf,
+                                   out[8..15]=highHalf);
+    
+    // Calculation of zr and ng
+    And(a=signBit, b=true, out=ng);
+    Or8Way(in=lowHalf, out=lowOr);
+    Or8Way(in=highHalf, out=highOr);
+    Or(a=lowOr, b=highOr, out=outOr);
+    Not(in=outOr, out=zr);
 }
